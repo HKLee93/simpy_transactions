@@ -52,7 +52,6 @@ def event(env, name, block, read=True):
     with lock.request() as request:
         start_wait_for_turn = env.now
         yield request
-        print('%4.1f %s waited for its turn
 
         wait = env.now - arrive
         if wait is not 0:
