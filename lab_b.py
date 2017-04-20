@@ -8,6 +8,7 @@ MAX_TIME = 10      # Minutes it takes to clean a car
 EVENT_INTERVAL = 3       # Create a car every ~7 minutes
 SIM_TIME = 2 * NUM_BLOCKS * MAX_TIME     # Simulation time in minutes
 READ_PROB = 0.75
+DEBUG = False
 
 
 class Block(object):
@@ -16,7 +17,7 @@ class Block(object):
     def __init__(self, env, max_time):
         self.env = env
         self.max_time = max_time
-        self.last_accessed = 0
+        self.last_write = 0
         self.id = Block.next_id
         Block.next_id += 1
 
@@ -27,29 +28,32 @@ class Block(object):
 
 def read(env, name, block):
     arrive = env.now
-    print('%4.1f %s: Block %d Received' % (arrive, name, block.id))
+    if DEBUG:
+        print('%4.1f %s: Block %d Received' % (arrive, name, block.id))
     yield env.process(block.access())
-    block.last_accessed = env.now
-    print('%4.1f %s: Block %d Finished' % (block.last_accessed, name, block.id))
+    if DEBUG:
+        print('%4.1f %s: Block %d Finished' % (env.now, name, block.id))
 
 
 def write(env, name, block):
     arrive = env.now
-    print('%4.1f %s: Block %d (Last accessed: %4.1f) Received' % (arrive, name, block.id, block.last_accessed))
+    if DEBUG:
+        print('%4.1f %s: Block %d Received' % (arrive, name, block.id))
 
     while True:
         write_start = env.now
-        if write_start > block.last_accessed:
+        yield env.process(block.access())
+        if block.last_write < write_start:
             break
-        print('%4.1f %s: Block %d Invalidated' % (write_start, name, block.id))
+        if DEBUG:
+            print('%4.1f %s: Block %d Invalidated (last write = %4.1f)'
+                % (write_start, name, block.id, block.last_write))
         env.timeout(1)
 
-    print('%4.1f %s: Block %d Start' % (write_start, name, block.id))
- 
-    yield env.process(block.access())
     finished = env.now
-    block.last_accessed = finished
-    print('%4.1f %s: Block %d Finished' % (finished, name, block.id))
+    block.last_write = finished
+    if DEBUG:
+        print('%4.1f %s: Block %d Finished' % (finished, name, block.id))
 
 
 def setup(env, num_blocks, max_time, event_interval, read_prob):
@@ -76,6 +80,7 @@ def setup(env, num_blocks, max_time, event_interval, read_prob):
 # Setup and start the simulation
 print('Invalid Dirty Write')
 random.seed(RANDOM_SEED)  # This helps reproducing the results
+DEBUG = True
 
 # Create an environment and start the setup process
 env = simpy.Environment()
