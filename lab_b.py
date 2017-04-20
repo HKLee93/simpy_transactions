@@ -3,8 +3,8 @@ import simpy
 
 
 RANDOM_SEED = 42
-NUM_BLOCKS = 2  # Number of machines in the carwash
-MAX_TIME = 100      # Minutes it takes to clean a car
+NUM_BLOCKS = 10  # Number of machines in the carwash
+MAX_TIME = 10      # Minutes it takes to clean a car
 EVENT_INTERVAL = 3       # Create a car every ~7 minutes
 SIM_TIME = 2 * NUM_BLOCKS * MAX_TIME     # Simulation time in minutes
 READ_PROB = 0.75
@@ -27,14 +27,15 @@ class Block(object):
 
 def read(env, name, block):
     arrive = env.now
-    print('%4.1f %s: Block %d' % (arrive, name, block.id))
+    print('%4.1f %s: Block %d Received' % (arrive, name, block.id))
     yield env.process(block.access())
     block.last_accessed = env.now
+    print('%4.1f %s: Block %d Finished' % (block.last_accessed, name, block.id))
 
 
 def write(env, name, block):
     arrive = env.now
-    print('%4.1f %s: Block %d Received' % (arrive, name, block.id))
+    print('%4.1f %s: Block %d (Last accessed: %4.1f) Received' % (arrive, name, block.id, block.last_accessed))
 
     while True:
         write_start = env.now
