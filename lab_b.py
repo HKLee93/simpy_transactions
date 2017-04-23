@@ -9,6 +9,8 @@ EVENT_INTERVAL = 3       # Create a car every ~7 minutes
 SIM_TIME = 2 * NUM_BLOCKS * MAX_TIME     # Simulation time in minutes
 READ_PROB = 0.75
 DEBUG = False
+NUM_INVALID_WRITES = 0.0
+NUM_WRITE_EVENTS = 0.0
 
 
 class Block(object):
@@ -18,6 +20,7 @@ class Block(object):
         self.env = env
         self.max_time = max_time
         self.last_write = 0
+        self.last_read = 0
         self.id = Block.next_id
         Block.next_id += 1
 
@@ -31,23 +34,29 @@ def read(env, name, block):
     if DEBUG:
         print('%4.1f %s: Block %d Received' % (arrive, name, block.id))
     yield env.process(block.access())
+    finished = env.now
+    block.last_read = finished
     if DEBUG:
-        print('%4.1f %s: Block %d Finished' % (env.now, name, block.id))
+        print('%4.1f %s: Block %d Finished' % (finished, name, block.id))
 
 
 def write(env, name, block):
     arrive = env.now
+    global NUM_WRITE_EVENTS
+    global NUM_INVALID_WRITES
+    NUM_WRITE_EVENTS += 1
     if DEBUG:
         print('%4.1f %s: Block %d Received' % (arrive, name, block.id))
 
     while True:
         write_start = env.now
         yield env.process(block.access())
-        if block.last_write < write_start:
+        if block.last_write < write_start or block.last_read < write_start:
             break
         if DEBUG:
             print('%4.1f %s: Block %d Invalidated (last write = %4.1f)'
                 % (write_start, name, block.id, block.last_write))
+            NUM_INVALID_WRITES += 1
         env.timeout(1)
 
     finished = env.now
@@ -88,3 +97,9 @@ env.process(setup(env, NUM_BLOCKS, MAX_TIME, EVENT_INTERVAL, READ_PROB))
 
 # Execute!
 env.run(until=SIM_TIME)
+
+if NUM_WRITE_EVENTS > 0:
+	print("Total Number Writes: %d" % NUM_WRITE_EVENTS)
+	print("Number Invalid Writes: %d" % NUM_INVALID_WRITES)
+	percent = (NUM_INVALID_WRITES / NUM_WRITE_EVENTS) * 100.0
+	print("Invalid Writes: %4.2f%%" % percent)
