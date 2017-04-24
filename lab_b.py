@@ -3,6 +3,7 @@ import simpy
 import time
 import argparse
 
+#parsing options
 parser = argparse.ArgumentParser(description='Tool to simulate invalid dirty writes.')
 parser.add_argument('-b', '--blocks', help='Number of data blocks', required=False, default=10)
 parser.add_argument('-r', '--runs', help='Number of runs', required=False, default=1)
@@ -25,6 +26,7 @@ NUM_INVALID_NUM_WRITES_PER_RUN = 0.0     # Number of invalid writes for an indiv
 NUM_WRITES_PER_RUN = 0.0				 # Number of writes for an individual run
 
 
+#data block
 class Block(object):
     next_id = 0
 
@@ -40,7 +42,7 @@ class Block(object):
         access_time = random.randint(0, self.max_time)
         yield self.env.timeout(access_time)
 
-
+#read action
 def read(env, name, block):
     arrive = env.now
     if DEBUG:
@@ -51,7 +53,7 @@ def read(env, name, block):
     if DEBUG:
         print('%4.1f %s: Block %d Finished' % (finished, name, block.id))
 
-
+#write action
 def write(env, name, block):
     arrive = env.now
     global TOTAL_NUM_WRITE_EVENTS
@@ -94,6 +96,7 @@ def setup(env, num_blocks, max_time, event_interval, read_prob):
         rand_event = random.random()
         rand_block = random.randint(0, num_blocks - 1)
 
+        #decide which action to be taken
         if (rand_event < read_prob):
           env.process(read(env, 'Read%d' % i, database[rand_block]))
         else:
