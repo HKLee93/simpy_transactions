@@ -2,7 +2,7 @@ import random
 import simpy
 import time
 
-RANDOM_SEED = RANDOM_SEED = int(round(time.time()))
+RANDOM_SEED = int(round(time.time()))
 NUM_BLOCKS = 2 # Number of data blocks
 MAX_TIME = 100 # Max read or write time
 EVENT_INTERVAL = 7 # Frequency of data block accesses
