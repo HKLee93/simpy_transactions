@@ -6,6 +6,7 @@ import argparse
 parser = argparse.ArgumentParser(description='Tool to simulate invalid dirty writes.')
 parser.add_argument('-b', '--blocks', help='Number of data blocks', required=False, default=10)
 parser.add_argument('-r', '--runs', help='Number of runs', required=False, default=1)
+parser.add_argument('-d', '--debug', help='Enable debug mode', action="store_true", required=False, default=False,)
 parser.parse_args()
 args = parser.parse_args()
 
@@ -16,7 +17,7 @@ MAX_TIME = 10      						 # Max read or write time
 EVENT_INTERVAL = 3      				 # Frequency of data block accesses
 SIM_TIME = 2 * NUM_BLOCKS * MAX_TIME     # Simulation time in minutes
 READ_PROB = 0.75						 # Probability that event ia a read
-DEBUG = False							 # Flag to indicate whether to print DEBUG statements
+DEBUG = args.debug							 # Flag to indicate whether to print DEBUG statements
 TOTAL_NUM_INVALID_WRITES = 0.0			 # Number of invalid writes during a sim run
 TOTAL_NUM_WRITE_EVENTS = 0.0			 # Total number of write events during a sim run
 PERCENT_SUM = 0.0						 # Sum of invalid write percents for each run
@@ -102,9 +103,7 @@ def setup(env, num_blocks, max_time, event_interval, read_prob):
         yield env.timeout(random.randint(event_interval - 2, event_interval + 2))
 
 
-# Setup and start the simulation
-DEBUG = False
-
+# Setup and start the simulations
 print('Invalid Dirty Write')
 print("Num Runs= %d" % NUM_RUNS)
 print("Num Data Blocks= %d" % NUM_BLOCKS)
@@ -112,7 +111,7 @@ print("Max Read/Write Time= %d" % MAX_TIME)
 print("Event Interval= %d" % EVENT_INTERVAL)
 print("Sim Time= %d" % SIM_TIME)
 print("Read Probablity= %4.2f" % READ_PROB) 
-print("Debug= %d" % DEBUG) 
+print("Debug On= %s" % DEBUG) 
 for x in range(1, NUM_RUNS+1):
 	print("Processing Run %d/%d..." % (x, NUM_RUNS))
 	RANDOM_SEED = int(round(time.time())) + x
