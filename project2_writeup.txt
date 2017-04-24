@@ -22,4 +22,4 @@ When the MAX_TIME = 30, the minimum number of blocks necessary to reduce the ave
 
 When the MAX_TIME = 50, the minimum number of blocks necessary to reduce the average percent of invalid writes is 15.
 
-
+From this, we can tell that when the time is short, less number of blocks is needed. 
