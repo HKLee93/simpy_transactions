@@ -1,8 +1,8 @@
 import random
 import simpy
+import time
 
-
-RANDOM_SEED = 42
+RANDOM_SEED = RANDOM_SEED = int(round(time.time()))
 NUM_BLOCKS = 2 # Number of data blocks
 MAX_TIME = 100 # Max read or write time
 EVENT_INTERVAL = 7 # Frequency of data block accesses
@@ -21,6 +21,7 @@ class Block(object):
         self.write_lock = simpy.Resource(env, 1)
         self.max_time = max_time
         self.last_write_time = 0
+        self.write_waiting = False
         self.id = Block.next_id
         Block.next_id += 1
 
@@ -35,7 +36,7 @@ def event(env, name, block, read=True):
 
     if read:
         # Don't proceed if time from this block's last write is too long
-        while env.now - block.last_write_time >= MAX_WRITE_WAIT:
+        while env.now - block.last_write_time >= MAX_WRITE_WAIT and block.write_waiting == True:
             yield env.timeout(POLL_INTERVAL)
 
         while block.write_lock.count is not 0:
@@ -44,6 +45,7 @@ def event(env, name, block, read=True):
         lock = block.read_lock
     else:
         while block.read_lock.count is not 0:
+            block.write_waiting = True
             print("%4.1f %s waiting on block %d (%d readers)" % (env.now, name, block.id, block.read_lock.count))
             yield env.timeout(POLL_INTERVAL)
 
@@ -63,6 +65,7 @@ def event(env, name, block, read=True):
         finished_time = env.now
         if not read:
             block.last_write_time = finished_time
+            block_write_waiting = False
         runtime = finished_time - start_time
         print('%4.1f %s (Block %d): Finished in %4.1f' % (finished_time, name, block.id, runtime))
 
@@ -97,6 +100,14 @@ def setup(env, num_blocks, max_time, event_interval, read_prob):
 
 # Setup and start the simulation
 print('Typical Reader and Writer')
+print("Random Seed= %d" % RANDOM_SEED)
+print("Num Data Blocks= %d" % NUM_BLOCKS)
+print("Max Read/Write Time= %d" % MAX_TIME)
+print("Event Interval= %d" % EVENT_INTERVAL)
+print("Sim Time= %d" % SIM_TIME)
+print("Read Probablity= %4.2f" % READ_PROB)
+print("Max Write Wait Time= %d" % MAX_WRITE_WAIT)
+print("Poll Interval= %d" % POLL_INTERVAL)
 random.seed(RANDOM_SEED)  # This helps reproducing the results
 
 # Create an environment and start the setup process
