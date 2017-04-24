@@ -17,8 +17,11 @@ EVENT_INTERVAL = 3      				 # Frequency of data block accesses
 SIM_TIME = 2 * NUM_BLOCKS * MAX_TIME     # Simulation time in minutes
 READ_PROB = 0.75						 # Probability that event ia a read
 DEBUG = False							 # Flag to indicate whether to print DEBUG statements
-NUM_INVALID_WRITES = 0.0				 # Number of invalid writes during a sim run
-NUM_WRITE_EVENTS = 0.0					 # Total number of write events during a sim run
+TOTAL_NUM_INVALID_WRITES = 0.0			 # Number of invalid writes during a sim run
+TOTAL_NUM_WRITE_EVENTS = 0.0			 # Total number of write events during a sim run
+PERCENT_SUM = 0.0						 # Sum of invalid write percents for each run
+NUM_INVALID_NUM_WRITES_PER_RUN = 0.0     # Number of invalid writes for an individual run
+NUM_WRITES_PER_RUN = 0.0				 # Number of writes for an individual run
 
 
 class Block(object):
@@ -50,9 +53,12 @@ def read(env, name, block):
 
 def write(env, name, block):
     arrive = env.now
-    global NUM_WRITE_EVENTS
-    global NUM_INVALID_WRITES
-    NUM_WRITE_EVENTS += 1
+    global TOTAL_NUM_WRITE_EVENTS
+    global TOTAL_NUM_INVALID_WRITES
+    global NUM_WRITES_PER_RUN
+    global NUM_INVALID_NUM_WRITES_PER_RUN
+    TOTAL_NUM_WRITE_EVENTS += 1
+    NUM_WRITES_PER_RUN += 1
     if DEBUG:
         print('%4.1f %s: Block %d Received' % (arrive, name, block.id))
 
@@ -62,7 +68,8 @@ def write(env, name, block):
         if block.last_write < write_start or block.last_read < write_start:
             break
         else:
-        	NUM_INVALID_WRITES += 1
+        	NUM_INVALID_NUM_WRITES_PER_RUN += 1
+        	TOTAL_NUM_INVALID_WRITES += 1
 	        if DEBUG:
 	            print('%4.1f %s: Block %d Invalidated (last write = %4.1f)'
 	                % (write_start, name, block.id, block.last_write))
@@ -118,11 +125,22 @@ for x in range(1, NUM_RUNS+1):
 
 	# Execute!
 	env.run(until=SIM_TIME)
+
+	# Keep track of the invalid write percent for this run
+	if NUM_WRITES_PER_RUN > 0:
+		percent = (NUM_INVALID_NUM_WRITES_PER_RUN / NUM_WRITES_PER_RUN) * 100.0
+		PERCENT_SUM += percent
+
+	# Reset the per run variables
+	NUM_INVALID_NUM_WRITES_PER_RUN = 0.0
+	NUM_WRITES_PER_RUN = 0.0
+
 	time.sleep(.001)
 
-if NUM_WRITE_EVENTS > 0:
-	print("\nSummary")
-	print("Total Number Writes: %d" % NUM_WRITE_EVENTS)
-	print("Number Invalid Writes: %d" % NUM_INVALID_WRITES)
-	percent = (NUM_INVALID_WRITES / NUM_WRITE_EVENTS) * 100.0
-	print("Invalid Writes: %4.2f%%" % percent)
+print("\nSummary")
+print("Number of Runs: %d" % NUM_RUNS)
+if TOTAL_NUM_WRITE_EVENTS > 0:
+	print("Total Number Writes: %d" % TOTAL_NUM_WRITE_EVENTS)
+	percent = (TOTAL_NUM_INVALID_WRITES / TOTAL_NUM_WRITE_EVENTS) * 100.0
+	print("Total Number Invalid Writes: %d ( %4.2f%%)" % (TOTAL_NUM_INVALID_WRITES, percent))
+print("Average Percent: %4.2f%%" % (PERCENT_SUM / NUM_RUNS))
