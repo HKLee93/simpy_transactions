@@ -1,16 +1,24 @@
 import random
 import simpy
+import time
+import argparse
 
+parser = argparse.ArgumentParser(description='Tool to simulate invalid dirty writes.')
+parser.add_argument('-b', '--blocks', help='Number of data blocks', required=False, default=10)
+parser.add_argument('-r', '--runs', help='Number of runs', required=False, default=1)
+parser.parse_args()
+args = parser.parse_args()
 
-RANDOM_SEED = 42
-NUM_BLOCKS = 10  # Number of machines in the carwash
-MAX_TIME = 10      # Minutes it takes to clean a car
-EVENT_INTERVAL = 3       # Create a car every ~7 minutes
+RANDOM_SEED = int(round(time.time()))
+NUM_RUNS = int(args.runs)			 	 # Number of times to run the simulation
+NUM_BLOCKS = int(args.blocks) 			 # Number of data blocks
+MAX_TIME = 10      						 # Max read or write time
+EVENT_INTERVAL = 3      				 # Frequency of data block accesses
 SIM_TIME = 2 * NUM_BLOCKS * MAX_TIME     # Simulation time in minutes
-READ_PROB = 0.75
-DEBUG = False
-NUM_INVALID_WRITES = 0.0
-NUM_WRITE_EVENTS = 0.0
+READ_PROB = 0.75						 # Probability that event ia a read
+DEBUG = False							 # Flag to indicate whether to print DEBUG statements
+NUM_INVALID_WRITES = 0.0				 # Number of invalid writes during a sim run
+NUM_WRITE_EVENTS = 0.0					 # Total number of write events during a sim run
 
 
 class Block(object):
@@ -53,10 +61,11 @@ def write(env, name, block):
         yield env.process(block.access())
         if block.last_write < write_start or block.last_read < write_start:
             break
-        if DEBUG:
-            print('%4.1f %s: Block %d Invalidated (last write = %4.1f)'
-                % (write_start, name, block.id, block.last_write))
-            NUM_INVALID_WRITES += 1
+        else:
+        	NUM_INVALID_WRITES += 1
+	        if DEBUG:
+	            print('%4.1f %s: Block %d Invalidated (last write = %4.1f)'
+	                % (write_start, name, block.id, block.last_write))
         env.timeout(1)
 
     finished = env.now
@@ -87,18 +96,32 @@ def setup(env, num_blocks, max_time, event_interval, read_prob):
 
 
 # Setup and start the simulation
+DEBUG = False
+
 print('Invalid Dirty Write')
-random.seed(RANDOM_SEED)  # This helps reproducing the results
-DEBUG = True
+print("Num Runs= %d" % NUM_RUNS)
+print("Num Data Blocks= %d" % NUM_BLOCKS)
+print("Max Read/Write Time= %d" % MAX_TIME)
+print("Event Interval= %d" % EVENT_INTERVAL)
+print("Sim Time= %d" % SIM_TIME)
+print("Read Probablity= %4.2f" % READ_PROB) 
+print("Debug= %d" % DEBUG) 
+for x in range(1, NUM_RUNS+1):
+	print("Processing Run %d/%d..." % (x, NUM_RUNS))
+	RANDOM_SEED = int(round(time.time())) + x
+	print("Random Seed= %d" % RANDOM_SEED)
+	random.seed(RANDOM_SEED)  # This helps reproducing the results
 
-# Create an environment and start the setup process
-env = simpy.Environment()
-env.process(setup(env, NUM_BLOCKS, MAX_TIME, EVENT_INTERVAL, READ_PROB))
+	# Create an environment and start the setup process
+	env = simpy.Environment()
+	env.process(setup(env, NUM_BLOCKS, MAX_TIME, EVENT_INTERVAL, READ_PROB))
 
-# Execute!
-env.run(until=SIM_TIME)
+	# Execute!
+	env.run(until=SIM_TIME)
+	time.sleep(.001)
 
 if NUM_WRITE_EVENTS > 0:
+	print("\nSummary")
 	print("Total Number Writes: %d" % NUM_WRITE_EVENTS)
 	print("Number Invalid Writes: %d" % NUM_INVALID_WRITES)
 	percent = (NUM_INVALID_WRITES / NUM_WRITE_EVENTS) * 100.0
