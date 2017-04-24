@@ -1,0 +1,11 @@
+Part A
+The strategy we used to avoid starvation in Part A was to keep track of how long it had been since a data block had been written to. 
+* Each data block keeps track of the time it was last written to.
+* During a Data Block Read:
+	o A data block read checks if the time since time this block has been written to is greater than the MAX_WRITE_WAIT.
+	o If the time is greater than MAX_WRITE_WAIT and a write is pending, then do not allow the read to grab the read lock.
+	o Only allow reads to continue when the write has occurred.
+By checking the MAX_WRITE_WAIT and write_waiting flags and forcing all new reads to pause until the write has occurred, we ensure that writes do not starve.
+
+Part B
+	The minimum number of blocks necessary to reduce the average of write invalid events is: 5
