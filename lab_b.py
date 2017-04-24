@@ -10,14 +10,14 @@ parser.add_argument('-d', '--debug', help='Enable debug mode', action="store_tru
 parser.parse_args()
 args = parser.parse_args()
 
-RANDOM_SEED = int(round(time.time()))
+RANDOM_SEED = int(round(time.time()))    # Seed for randomness
 NUM_RUNS = int(args.runs)			 	 # Number of times to run the simulation
 NUM_BLOCKS = int(args.blocks) 			 # Number of data blocks
-MAX_TIME = 10      						 # Max read or write time
+MAX_TIME = 50      						 # Max read or write time
 EVENT_INTERVAL = 3      				 # Frequency of data block accesses
-SIM_TIME = 2 * NUM_BLOCKS * MAX_TIME     # Simulation time in minutes
+SIM_TIME = 2 * NUM_BLOCKS * MAX_TIME     # Simulation time
 READ_PROB = 0.75						 # Probability that event ia a read
-DEBUG = args.debug							 # Flag to indicate whether to print DEBUG statements
+DEBUG = args.debug					     # Flag to indicate whether to print DEBUG statements
 TOTAL_NUM_INVALID_WRITES = 0.0			 # Number of invalid writes during a sim run
 TOTAL_NUM_WRITE_EVENTS = 0.0			 # Total number of write events during a sim run
 PERCENT_SUM = 0.0						 # Sum of invalid write percents for each run
@@ -112,12 +112,16 @@ print("Event Interval= %d" % EVENT_INTERVAL)
 print("Sim Time= %d" % SIM_TIME)
 print("Read Probablity= %4.2f" % READ_PROB) 
 print("Debug On= %s" % DEBUG) 
+
+#loop to run the simulation multiple times
 for x in range(1, NUM_RUNS+1):
 	print("Processing Run %d/%d..." % (x, NUM_RUNS))
+    
+    #seed for random
 	RANDOM_SEED = int(round(time.time())) + x
 	print("Random Seed= %d" % RANDOM_SEED)
-	random.seed(RANDOM_SEED)  # This helps reproducing the results
 
+        random.seed(RANDOM_SEED)
 	# Create an environment and start the setup process
 	env = simpy.Environment()
 	env.process(setup(env, NUM_BLOCKS, MAX_TIME, EVENT_INTERVAL, READ_PROB))
@@ -141,5 +145,5 @@ print("Number of Runs: %d" % NUM_RUNS)
 if TOTAL_NUM_WRITE_EVENTS > 0:
 	print("Total Number Writes: %d" % TOTAL_NUM_WRITE_EVENTS)
 	percent = (TOTAL_NUM_INVALID_WRITES / TOTAL_NUM_WRITE_EVENTS) * 100.0
-	print("Total Number Invalid Writes: %d ( %4.2f%%)" % (TOTAL_NUM_INVALID_WRITES, percent))
+	print("Total Number Invalid Writes: %d (%4.2f%%)" % (TOTAL_NUM_INVALID_WRITES, percent))
 print("Average Percent: %4.2f%%" % (PERCENT_SUM / NUM_RUNS))

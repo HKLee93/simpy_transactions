@@ -1,4 +1,5 @@
 Part A
+
 The strategy we used to avoid starvation in Part A was to keep track of how long it had been since a data block had been written to. 
 * Each data block keeps track of the time it was last written to.
 * During a Data Block Read:
@@ -8,4 +9,17 @@ The strategy we used to avoid starvation in Part A was to keep track of how long
 By checking the MAX_WRITE_WAIT and write_waiting flags and forcing all new reads to pause until the write has occurred, we ensure that writes do not starve.
 
 Part B
-	The minimum number of blocks necessary to reduce the average of write invalid events is: 5
+
+We simulated Part B by 
+1. changing the MAX_TIME and 
+2. incrementing the number of blocks.
+
+The result is shown in the attached picture. 
+
+When the MAX_TIME = 10, the minimum number of blocks necessary to reduce the average percent of invalid writes is 5.
+
+When the MAX_TIME = 30, the minimum number of blocks necessary to reduce the average percent of invalid writes is 10.
+
+When the MAX_TIME = 50, the minimum number of blocks necessary to reduce the average percent of invalid writes is 15.
+
+
